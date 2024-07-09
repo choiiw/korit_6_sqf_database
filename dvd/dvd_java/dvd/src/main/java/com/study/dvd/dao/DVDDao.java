@@ -8,6 +8,8 @@ import com.study.dvd.entity.Publisher;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DVDDao {
     public static int addDvd(DVD dvd) {
@@ -89,5 +91,51 @@ public class DVDDao {
 
         return successCount;
     }
+
+    public static List<DVD> findAll(int count) {
+        DBConnectionMgr pool = DBConnectionMgr.getInstance();
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        List<DVD> dvdList = new ArrayList<>();
+
+        try {
+            connection = pool.getConnection();
+            String sql = "select * from dvd_view limit 0, ?";
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setInt(1, count);
+            resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()){
+                Producer producer = Producer.builder()
+                        .producerId(resultSet.getInt(4))
+                        .producerName(resultSet.getString(5))
+                        .build();
+                Publisher publisher = Publisher.builder()
+                        .publisherId(resultSet.getInt(6))
+                        .publisherName(resultSet.getString(7))
+                        .build();
+                DVD dvd = DVD.builder()
+                        .dvdId(resultSet.getInt(1))
+                        .registrationNumber(resultSet.getString(2))
+                        .title(resultSet.getString(3))
+                        .producerId(producer.getProducerId())
+                        .producer(producer)
+                        .publisherId(publisher.getPublisherId())
+                        .publisher(publisher)
+                        .publicationYear(resultSet.getInt(8))
+                        .databaseDate(resultSet.getDate(9).toLocalDate())
+                        .build();
+
+                dvdList.add(dvd);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            pool.freeConnection(connection);
+        }
+        return dvdList;
+    }
+
 }
 
